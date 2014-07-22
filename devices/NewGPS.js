@@ -13,21 +13,12 @@ Serial4.setup(9600,{tx:C10,rx:C11});
 var gps = connect(Serial4);
 gps.init();
 ```
-
-or, to log NMEA data to SD before parsing:
-
-```
-Serial4.setup(9600,{tx:C10,rx:C11});
-var gps = connect(Serial4, 'nmea.log');
-gps.init();
-```
 */
 
 var C = {};
 
-function GPS(serial, logfile) {
+function GPS(serial) {
     this.serial = serial;
-    this.logfile = logfile;
     this.phrase = '';
 }
 
@@ -41,10 +32,7 @@ GPS.prototype.C = {
 };
 
 GPS.prototype.init = function() {
-    if (this.logfile) {
-        this.fs = require('fs');
-    }
-    serial.on('data', this.get_data(data));
+    this.serial.on('data', this.get_data);
 };
 
 GPS.prototype.get_data = function(data) {
@@ -53,9 +41,7 @@ GPS.prototype.get_data = function(data) {
     // (which does *not* include the '\n' character
     if ( data == '\n') {
         this.phrase += data;
-        if (this.logfile) {
-            this.fs.appendFile(this.logfile, this.phrase);
-        }
+        this.emit('phrase', this.phrase);
         // run phrase parsing here
         this.parse_phrase(this.phrase);
         this.phrase = '';
@@ -96,6 +82,6 @@ var parse = {
     },
 };
 
-exports.connect = function(serial, speed, opts) {
-    return new GPS(serial, speed, opts);
+exports.connect = function(serial) {
+    return new GPS(serial);
 };
